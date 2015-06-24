@@ -12,16 +12,15 @@ import static org.dita.dost.util.Constants.*;
 
 import java.io.File;
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import javax.xml.parsers.DocumentBuilder;
 
+import org.dita.dost.util.DitaClass;
 import org.dita.dost.util.XMLUtils;
 import org.w3c.dom.Element;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.dita.dost.log.DITAOTLogger;
 import org.xml.sax.InputSource;
@@ -78,6 +77,14 @@ public final class KeyrefReader implements AbstractReader {
             logger.error("Failed to parse map: " + e.getMessage(), e);
             return;
         }
+        if (keys != null) {
+            singleMap(doc);
+        } else {
+            multiMap(doc);
+        }
+    }
+
+    private void singleMap(final Document doc) {
         final NodeList elems = doc.getDocumentElement().getElementsByTagName("*");
         for (int i = 0; i < elems.getLength(); i++) {
             final Element elem = (Element) elems.item(i);
@@ -96,6 +103,49 @@ public final class KeyrefReader implements AbstractReader {
         }
     }
     
+    private static final DitaClass SUBMAP = new DitaClass("+ map/topicref mapgroup-d/topicgroup ditaot-d/submap ");
+
+    private void multiMap(final Document doc) {
+        // get maps
+        final List<Element> maps = new ArrayList<Element>();
+        maps.add(doc.getDocumentElement());
+        final NodeList elems = doc.getDocumentElement().getElementsByTagName("*");
+        for (int i = 0; i < elems.getLength(); i++) {
+            final Element elem = (Element) elems.item(i);
+            final String classValue = elem.getAttribute(ATTRIBUTE_NAME_CLASS);
+            if (MAP_MAP.matches(classValue) || SUBMAP.matches(classValue)) {
+                maps.add(elem);
+            }
+        }
+        for (final Element map: maps) {
+            readMap(map);
+        }
+    }
+
+    private void readMap(final Element map) {
+        final NodeList elems = map.getChildNodes();
+        for (int i = 0; i < elems.getLength(); i++) {
+            if (elems.item(i).getNodeType() == Node.ELEMENT_NODE) {
+                final Element elem = (Element) elems.item(i);
+                final String keyName = elem.getAttribute(ATTRIBUTE_NAME_KEYS);
+                if (!keyName.isEmpty()) {
+                    for (final String key: keyName.trim().split("\\s+")) {
+                        if (!keyDefTable.containsKey(key)) {
+                            final Document d = builder.newDocument();
+                            final Element copy = (Element) d.importNode(elem, true);
+                            d.appendChild(copy);
+                            keyDefTable.put(key, copy);
+                        }
+                    }
+                }
+                final String classValue = elem.getAttribute(ATTRIBUTE_NAME_CLASS);
+                if (!SUBMAP.matches(classValue)) {
+                    readMap(elem);
+                }
+            }
+        }
+    }
+
     /**
      * Set keys to be read.
      * 
