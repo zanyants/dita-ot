@@ -74,6 +74,7 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
     private boolean profilingEnabled;
     private boolean validate;
     private String transtype;
+    private String[] prefilterClasses;
     private boolean forceUnique;
     /** Absolute DITA-OT base path. */
     private File ditaDir;
@@ -290,6 +291,18 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
     private List<XMLFilter> getProcessingPipe(final URI fileToParse) {
         final List<XMLFilter> pipe = new ArrayList<XMLFilter>();
 
+        if (prefilterClasses != null) {
+            for (final String prefilterClass : prefilterClasses) {
+                try {
+                    pipe.add((XMLFilter)Class.forName(prefilterClass).newInstance());
+                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                    throw new RuntimeException(
+                            String.format("Failed to create instance of prefilter class '%s'", prefilterClass ),
+                            e );
+                }
+            }
+        }
+        
         if (genDebugInfo) {
             final DebugFilter debugFilter = new DebugFilter();
             debugFilter.setLogger(logger);
@@ -333,6 +346,7 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
         final File baseDir = toFile(input.getAttribute(ANT_INVOKER_PARAM_BASEDIR));
         ditaDir = new File(input.getAttribute(ANT_INVOKER_EXT_PARAM_DITADIR));
         transtype = input.getAttribute(ANT_INVOKER_EXT_PARAM_TRANSTYPE);
+        prefilterClasses = input.getAttribute(ANT_INVOKER_EXT_PARAM_PREFILTER_CLASSES).split(";");
         profilingEnabled = true;
         if (input.getAttribute(ANT_INVOKER_PARAM_PROFILING_ENABLED) != null) {
             profilingEnabled = Boolean.parseBoolean(input.getAttribute(ANT_INVOKER_PARAM_PROFILING_ENABLED));
