@@ -87,7 +87,7 @@
         <param name="gramcache" value="${args.grammar.cache}"/>
         <param name="setsystemid" value="${args.xml.systemid.set}"/>
         <param name="profiling.enable" value="${filter-on-parse}" unless="filter-on-parse"/>
-        <param name="prefilter-classes" value="${preprocess_prefilter_classes}"/>
+        <param name="prefilters" value="${preprocess_prefilters}"/>
       </module>
     </pipeline>
   </target>
@@ -114,7 +114,7 @@
         <param name="force-unique" value="${force-unique}" if="force-unique"/>
         <param name="generate-debug-attributes" value="${generate-debug-attributes}" if="generate-debug-attributes"/>
         <param name="processing-mode" value="${processing-mode}" if="processing-mode"/>
-        <param name="prefilter-classes" value="${preprocess_prefilter_classes}"/>
+        <param name="prefilters" value="${preprocess_prefilters}"/>
       </module>
     </pipeline>
     <!-- generate list files -->

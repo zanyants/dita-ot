@@ -788,7 +788,7 @@ public final class Constants {
     public static final String ANT_INVOKER_EXT_PARAN_FORCE_UNIQUE = "force-unique";
     public static final String ANT_INVOKER_EXT_PARAM_GENERATE_DEBUG_ATTR = "generate-debug-attributes";
     public static final String ANT_INVOKER_EXT_PARAM_PROCESSING_MODE = "processing-mode";
-    public static final String ANT_INVOKER_EXT_PARAM_PREFILTER_CLASSES = "prefilter-classes";
+    public static final String ANT_INVOKER_EXT_PARAM_PREFILTERS = "prefilters";
     /**Constants for line separator.*/
     public static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
@@ -944,8 +944,8 @@ public final class Constants {
     public static final String CONF_PRINT_TRANSTYPES = "print_transtypes";
     /** Property name for template files. */
     public static final String CONF_TEMPLATES = "templates";
-    /** Property name for preprocess prefilter class names. */
-    public static final String CONF_PREPROCESS_PREFILTER = "preprocess_prefilter_classes";
+    /** Property name for preprocess prefilters. */
+    public static final String CONF_PREPROCESS_PREFILTERS = "preprocess_prefilters";
 
     /** Project reference name for job configuration object. */
     public static final String ANT_REFERENCE_JOB = "job";

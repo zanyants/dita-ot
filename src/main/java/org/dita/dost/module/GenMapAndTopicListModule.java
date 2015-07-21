@@ -16,6 +16,7 @@ import static org.dita.dost.util.URLUtils.*;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -40,6 +41,11 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
+import javax.xml.transform.Source;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.sax.SAXTransformerFactory;
+import javax.xml.transform.stream.StreamSource;
 
 import org.apache.xerces.xni.grammars.XMLGrammarPool;
 import org.dita.dost.exception.DITAOTException;
@@ -252,7 +258,7 @@ public final class GenMapAndTopicListModule extends AbstractPipelineModuleImpl {
      */
     private final Map<URI, Set<URI>> schemeDictionary;
     private String transtype;
-    private String[] prefilterClasses;
+    private String[] prefilters;
 
     /**
      * use grammar pool cache
@@ -405,7 +411,7 @@ public final class GenMapAndTopicListModule extends AbstractPipelineModuleImpl {
         transtype = input.getAttribute(ANT_INVOKER_EXT_PARAM_TRANSTYPE);
         gramcache = "yes".equalsIgnoreCase(input.getAttribute(ANT_INVOKER_EXT_PARAM_GRAMCACHE));
         setSystemid = "yes".equalsIgnoreCase(input.getAttribute(ANT_INVOKER_EXT_PARAN_SETSYSTEMID));
-        prefilterClasses = input.getAttribute(ANT_INVOKER_EXT_PARAM_PREFILTER_CLASSES).split(";");
+        prefilters = input.getAttribute(ANT_INVOKER_EXT_PARAM_PREFILTERS).split(";");
 
         // For the output control
         job.setGeneratecopyouter(input.getAttribute(ANT_INVOKER_EXT_PARAM_GENERATECOPYOUTTER));
@@ -485,14 +491,28 @@ public final class GenMapAndTopicListModule extends AbstractPipelineModuleImpl {
         assert fileToParse.isAbsolute();
         final List<XMLFilter> pipe = new ArrayList<XMLFilter>();
 
-        if (prefilterClasses != null) {
-            for (final String prefilterClass : prefilterClasses) {
-                try {
-                    pipe.add((XMLFilter)Class.forName(prefilterClass).newInstance());
-                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                    throw new RuntimeException(
-                            String.format("Failed to create instance of prefilter class '%s'", prefilterClass ),
-                            e );
+        if (prefilters != null) {
+            for (final String prefilter : prefilters) {
+                if (prefilter.startsWith("class:")) {
+                    final String className = prefilter.substring(6);
+                    try {
+                        pipe.add((XMLFilter) Class.forName(className).newInstance());
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                        throw new RuntimeException(
+                                String.format("Failed to create instance of prefilter class '%s'", className),
+                                e);
+                    }
+                } else {
+                    final TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                    try {
+                        final SAXTransformerFactory saxTransformerFactory = (SAXTransformerFactory) transformerFactory;
+                        final Source xslFile = new StreamSource(new FileInputStream(prefilter));
+                        pipe.add(saxTransformerFactory.newXMLFilter(xslFile));
+                    } catch (final FileNotFoundException | TransformerConfigurationException e) {
+                        throw new RuntimeException(
+                                String.format("Failed to create XMLFilter for prefilter XSLT '%s'", prefilter),
+                                e);
+                    }
                 }
             }
         }

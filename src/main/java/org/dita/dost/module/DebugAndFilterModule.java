@@ -18,6 +18,8 @@ import static org.dita.dost.util.URLUtils.*;
 import static org.dita.dost.util.FilterUtils.*;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -28,10 +30,13 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.transform.Result;
 import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.sax.SAXSource;
+import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
 import org.apache.xerces.xni.grammars.XMLGrammarPool;
 import org.apache.xml.resolver.tools.CatalogResolver;
@@ -74,7 +79,7 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
     private boolean profilingEnabled;
     private boolean validate;
     private String transtype;
-    private String[] prefilterClasses;
+    private String[] prefilters;
     private boolean forceUnique;
     /** Absolute DITA-OT base path. */
     private File ditaDir;
@@ -291,14 +296,28 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
     private List<XMLFilter> getProcessingPipe(final URI fileToParse) {
         final List<XMLFilter> pipe = new ArrayList<XMLFilter>();
 
-        if (prefilterClasses != null) {
-            for (final String prefilterClass : prefilterClasses) {
-                try {
-                    pipe.add((XMLFilter)Class.forName(prefilterClass).newInstance());
-                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                    throw new RuntimeException(
-                            String.format("Failed to create instance of prefilter class '%s'", prefilterClass ),
-                            e );
+        if (prefilters != null) {
+            for (final String prefilter : prefilters) {
+                if (prefilter.startsWith("class:")) {
+                    final String className = prefilter.substring(6);
+                    try {
+                        pipe.add((XMLFilter) Class.forName(className).newInstance());
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                        throw new RuntimeException(
+                                String.format("Failed to create instance of prefilter class '%s'", className),
+                                e);
+                    }
+                } else {
+                    final TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                    try {
+                        final SAXTransformerFactory saxTransformerFactory = (SAXTransformerFactory) transformerFactory;
+                        final Source xslFile = new StreamSource(new FileInputStream(prefilter));
+                        pipe.add(saxTransformerFactory.newXMLFilter(xslFile));
+                    } catch (final FileNotFoundException | TransformerConfigurationException e) {
+                        throw new RuntimeException(
+                                String.format("Failed to create XMLFilter for prefilter XSLT '%s'", prefilter),
+                                e);
+                    }
                 }
             }
         }
@@ -346,7 +365,7 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
         final File baseDir = toFile(input.getAttribute(ANT_INVOKER_PARAM_BASEDIR));
         ditaDir = new File(input.getAttribute(ANT_INVOKER_EXT_PARAM_DITADIR));
         transtype = input.getAttribute(ANT_INVOKER_EXT_PARAM_TRANSTYPE);
-        prefilterClasses = input.getAttribute(ANT_INVOKER_EXT_PARAM_PREFILTER_CLASSES).split(";");
+        prefilters = input.getAttribute(ANT_INVOKER_EXT_PARAM_PREFILTERS).split(";");
         profilingEnabled = true;
         if (input.getAttribute(ANT_INVOKER_PARAM_PROFILING_ENABLED) != null) {
             profilingEnabled = Boolean.parseBoolean(input.getAttribute(ANT_INVOKER_PARAM_PROFILING_ENABLED));
