@@ -311,8 +311,9 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
                     final TransformerFactory transformerFactory = TransformerFactory.newInstance();
                     try {
                         final SAXTransformerFactory saxTransformerFactory = (SAXTransformerFactory) transformerFactory;
-                        final Source xslFile = new StreamSource(new FileInputStream(prefilter));
-                        pipe.add(saxTransformerFactory.newXMLFilter(xslFile));
+                        final File xslFile = new File(prefilter);
+                        final Source xslSource = new StreamSource(new FileInputStream(xslFile),xslFile.toURI().toString());                        
+                        pipe.add(saxTransformerFactory.newXMLFilter(xslSource));
                     } catch (final FileNotFoundException | TransformerConfigurationException e) {
                         throw new RuntimeException(
                                 String.format("Failed to create XMLFilter for prefilter XSLT '%s'", prefilter),
