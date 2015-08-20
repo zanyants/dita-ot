@@ -23,8 +23,79 @@
 -->
 <xsl:stylesheet version="2.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-  
-  <xsl:template name="output-message">
+  <!-- the pre-2.1 version that emits location information in the format Oxygen expects. -->
+    <xsl:template name="output-message">
+        <xsl:param name="msg" select="'***'"/>
+        <xsl:param name="msgcat" select="$msgprefix"/>
+        <xsl:param name="msgnum" select="'000'"/>
+        <xsl:param name="msgsev" select="'I'"/>
+        <xsl:param name="msgparams" select="''"/>
+        
+        <xsl:variable name="msgid">
+            <xsl:value-of select="$msgcat"/>
+            <xsl:value-of select="$msgnum"/>
+            <xsl:value-of select="$msgsev"/>
+        </xsl:variable>
+        <xsl:variable name="msgdoc" select="document('plugin:org.dita.base:resources/messages.xml')"/>
+        <xsl:variable name="msgcontent">
+            <xsl:choose>
+                <xsl:when test="$msg!='***'">
+                    <xsl:value-of select="$msg"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:apply-templates select="$msgdoc/messages/message[@id=$msgid]" mode="get-message-content">    
+                        <xsl:with-param name="params" select="$msgparams"/>    
+                    </xsl:apply-templates>
+                </xsl:otherwise>
+            </xsl:choose>
+        </xsl:variable>
+        <xsl:variable name="localclass"><xsl:value-of select="@class"/></xsl:variable>
+        <!-- Oxygen chokes on file:/ uris, needs pure filesystem path (C:\...). -->
+        <xsl:variable name="xtrf">
+          <xsl:choose>
+            <xsl:when test="starts-with( @xtrf, 'file:/')">
+              <xsl:value-of select="substring( @xtrf, 7 )"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="@xtrf"/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:variable>
+        <xsl:variable name="debugloc">
+            <!-- Information on how to find the error; file name, followed by element counter: -->
+            <!-- (File = filename.dita, Element = searchtitle:1) -->
+            <xsl:if test="$xtrf or @xtrc">
+                <xsl:text>(</xsl:text>
+                <xsl:if test="$xtrf">
+                    <xsl:text>File = </xsl:text><xsl:value-of select="$xtrf"/>
+                    <xsl:if test="@xtrc"><xsl:text>, </xsl:text></xsl:if>
+                </xsl:if>
+                <xsl:if test="@xtrc"><xsl:text>Element = </xsl:text><xsl:value-of select="@xtrc"/></xsl:if>
+                <xsl:text>)</xsl:text>
+            </xsl:if>
+        </xsl:variable>
+        
+        <xsl:variable name="m">
+            <xsl:value-of select="$msgcontent"/>
+            <xsl:if test="normalize-space($debugloc)">
+                <xsl:value-of select="concat(' The location of this problem was at ',$debugloc)"/>
+            </xsl:if>
+        </xsl:variable>
+        <xsl:choose>
+            <xsl:when test="$msgsev = 'F'">
+                <xsl:message terminate="yes">
+                    <xsl:value-of select="$m"/>
+                </xsl:message>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:message>
+                    <xsl:value-of select="$m"/>
+                </xsl:message>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+      
+  <xsl:template name="output-message_2_1">
     <xsl:param name="msg" select="'***'"/>
     <xsl:param name="msgcat" select="$msgprefix"/>
     <xsl:param name="msgnum" select="'000'"/>
