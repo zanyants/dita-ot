@@ -505,10 +505,14 @@ public final class GenMapAndTopicListModule extends AbstractPipelineModuleImpl {
                 } else {
                     final TransformerFactory transformerFactory = TransformerFactory.newInstance();
                     try {
+                        CatalogUtils.setDitaDir(ditaDir);
                         final SAXTransformerFactory saxTransformerFactory = (SAXTransformerFactory) transformerFactory;
+                        saxTransformerFactory.setURIResolver(CatalogUtils.getCatalogResolver());
                         final File xslFile = new File(prefilter);
-                        final Source xslSource = new StreamSource(new FileInputStream(xslFile),xslFile.toURI().toString());                        
-                        pipe.add(saxTransformerFactory.newXMLFilter(xslSource));
+                        final Source xslSource = new StreamSource(new FileInputStream(xslFile),xslFile.toURI().toString());   
+                        final XMLFilter filter = saxTransformerFactory.newXMLFilter(xslSource);
+                        filter.setEntityResolver(CatalogUtils.getCatalogResolver());
+                        pipe.add(filter);                        
                     } catch (final FileNotFoundException | TransformerConfigurationException e) {
                         throw new RuntimeException(
                                 String.format("Failed to create XMLFilter for prefilter XSLT '%s'", prefilter),

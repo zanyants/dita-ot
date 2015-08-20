@@ -296,6 +296,13 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
     private List<XMLFilter> getProcessingPipe(final URI fileToParse) {
         final List<XMLFilter> pipe = new ArrayList<XMLFilter>();
 
+        if (genDebugInfo) {
+            final DebugFilter debugFilter = new DebugFilter();
+            debugFilter.setLogger(logger);
+            debugFilter.setInputFile(currentFile);
+            pipe.add(debugFilter);
+        }
+        
         if (prefilters != null) {
             for (final String prefilter : prefilters) {
                 if (prefilter.startsWith("class:")) {
@@ -310,10 +317,14 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
                 } else {
                     final TransformerFactory transformerFactory = TransformerFactory.newInstance();
                     try {
+                        CatalogUtils.setDitaDir(ditaDir);
                         final SAXTransformerFactory saxTransformerFactory = (SAXTransformerFactory) transformerFactory;
+                        saxTransformerFactory.setURIResolver(CatalogUtils.getCatalogResolver());
                         final File xslFile = new File(prefilter);
-                        final Source xslSource = new StreamSource(new FileInputStream(xslFile),xslFile.toURI().toString());                        
-                        pipe.add(saxTransformerFactory.newXMLFilter(xslSource));
+                        final Source xslSource = new StreamSource(new FileInputStream(xslFile),xslFile.toURI().toString());
+                        final XMLFilter filter = saxTransformerFactory.newXMLFilter(xslSource);
+                        filter.setEntityResolver(CatalogUtils.getCatalogResolver());
+                        pipe.add(filter);
                     } catch (final FileNotFoundException | TransformerConfigurationException e) {
                         throw new RuntimeException(
                                 String.format("Failed to create XMLFilter for prefilter XSLT '%s'", prefilter),
@@ -323,13 +334,6 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
             }
         }
         
-        if (genDebugInfo) {
-            final DebugFilter debugFilter = new DebugFilter();
-            debugFilter.setLogger(logger);
-            debugFilter.setInputFile(currentFile);
-            pipe.add(debugFilter);
-        }
-
         if (filterUtils != null) {
             final ProfilingFilter profilingFilter = new ProfilingFilter();
             profilingFilter.setLogger(logger);
