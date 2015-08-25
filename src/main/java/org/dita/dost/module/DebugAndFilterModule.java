@@ -72,6 +72,7 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
     private boolean profilingEnabled;
     private boolean validate;
     private String transtype;
+    private String[] prefilters;
     private boolean forceUnique;
     /** Absolute DITA-OT base path. */
     private File ditaDir;
@@ -287,6 +288,37 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
             debugFilter.setInputFile(currentFile);
             pipe.add(debugFilter);
         }
+        
+        if (prefilters != null) {
+            for (final String prefilter : prefilters) {
+                if (prefilter.startsWith("class:")) {
+                    final String className = prefilter.substring(6);
+                    try {
+                        pipe.add((XMLFilter) Class.forName(className).newInstance());
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                        throw new RuntimeException(
+                                String.format("Failed to create instance of prefilter class '%s'", className),
+                                e);
+                    }
+                } else {
+                    final TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                    try {
+                        CatalogUtils.setDitaDir(ditaDir);
+                        final SAXTransformerFactory saxTransformerFactory = (SAXTransformerFactory) transformerFactory;
+                        saxTransformerFactory.setURIResolver(CatalogUtils.getCatalogResolver());
+                        final File xslFile = new File(prefilter);
+                        final Source xslSource = new StreamSource(new FileInputStream(xslFile),xslFile.toURI().toString());
+                        final XMLFilter filter = saxTransformerFactory.newXMLFilter(xslSource);
+                        filter.setEntityResolver(CatalogUtils.getCatalogResolver());
+                        pipe.add(filter);
+                    } catch (final FileNotFoundException | TransformerConfigurationException e) {
+                        throw new RuntimeException(
+                                String.format("Failed to create XMLFilter for prefilter XSLT '%s'", prefilter),
+                                e);
+                    }
+                }
+            }
+        }
 
         if (filterUtils != null) {
             final ProfilingFilter profilingFilter = new ProfilingFilter();
@@ -324,6 +356,7 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
         final File baseDir = toFile(input.getAttribute(ANT_INVOKER_PARAM_BASEDIR));
         ditaDir = new File(input.getAttribute(ANT_INVOKER_EXT_PARAM_DITADIR));
         transtype = input.getAttribute(ANT_INVOKER_EXT_PARAM_TRANSTYPE);
+        prefilters = input.getAttribute(ANT_INVOKER_EXT_PARAM_PREFILTERS).split(";");
         profilingEnabled = true;
         if (input.getAttribute(ANT_INVOKER_PARAM_PROFILING_ENABLED) != null) {
             profilingEnabled = Boolean.parseBoolean(input.getAttribute(ANT_INVOKER_PARAM_PROFILING_ENABLED));

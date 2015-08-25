@@ -88,6 +88,7 @@
         <param name="setsystemid" value="${args.xml.systemid.set}"/>
         <param name="profiling.enable" value="${filter-on-parse}" unless="filter-on-parse"/>
         <param name="processing-mode" value="${processing-mode}" if="processing-mode"/>
+        <param name="prefilters" value="${preprocess_prefilters}"/>
       </module>
     </pipeline>
   </target>
@@ -114,6 +115,7 @@
         <param name="force-unique" value="${force-unique}" if="force-unique"/>
         <param name="generate-debug-attributes" value="${generate-debug-attributes}" if="generate-debug-attributes"/>
         <param name="processing-mode" value="${processing-mode}" if="processing-mode"/>
+        <param name="prefilters" value="${preprocess_prefilters}"/>
       </module>
     </pipeline>
     <!-- generate list files -->

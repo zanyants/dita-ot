@@ -16,6 +16,7 @@ import static org.dita.dost.util.URLUtils.*;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -41,6 +42,11 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
+import javax.xml.transform.Source;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.sax.SAXTransformerFactory;
+import javax.xml.transform.stream.StreamSource;
 
 import org.apache.xerces.xni.grammars.XMLGrammarPool;
 import org.dita.dost.exception.DITAOTException;
@@ -242,6 +248,8 @@ public final class GenMapAndTopicListModule extends AbstractPipelineModuleImpl {
             outputResult();
         } catch (final DITAOTException e) {
             throw e;
+        } catch (final SAXException e) {
+            throw new DITAOTException(e.getMessage(), e);
         } catch (final Exception e) {
             throw new DITAOTException(e.getMessage(), e);
         }
@@ -323,7 +331,8 @@ public final class GenMapAndTopicListModule extends AbstractPipelineModuleImpl {
         setSystemid = "yes".equalsIgnoreCase(input.getAttribute(ANT_INVOKER_EXT_PARAN_SETSYSTEMID));
         final String mode = input.getAttribute(ANT_INVOKER_EXT_PARAM_PROCESSING_MODE);
         processingMode = mode != null ? Mode.valueOf(mode.toUpperCase()) : Mode.LAX;
-
+        prefilters = input.getAttribute(ANT_INVOKER_EXT_PARAM_PREFILTERS).split(";");
+        
         // For the output control
         job.setGeneratecopyouter(input.getAttribute(ANT_INVOKER_EXT_PARAM_GENERATECOPYOUTTER));
         job.setOutterControl(input.getAttribute(ANT_INVOKER_EXT_PARAM_OUTTERCONTROL));
@@ -401,6 +410,37 @@ public final class GenMapAndTopicListModule extends AbstractPipelineModuleImpl {
     private List<XMLFilter> getProcessingPipe(final URI fileToParse) {
         assert fileToParse.isAbsolute();
         final List<XMLFilter> pipe = new ArrayList<>();
+
+        if (prefilters != null) {
+            for (final String prefilter : prefilters) {
+                if (prefilter.startsWith("class:")) {
+                    final String className = prefilter.substring(6);
+                    try {
+                        pipe.add((XMLFilter) Class.forName(className).newInstance());
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                        throw new RuntimeException(
+                                String.format("Failed to create instance of prefilter class '%s'", className),
+                                e);
+                    }
+                } else {
+                    final TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                    try {
+                        CatalogUtils.setDitaDir(ditaDir);
+                        final SAXTransformerFactory saxTransformerFactory = (SAXTransformerFactory) transformerFactory;
+                        saxTransformerFactory.setURIResolver(CatalogUtils.getCatalogResolver());
+                        final File xslFile = new File(prefilter);
+                        final Source xslSource = new StreamSource(new FileInputStream(xslFile),xslFile.toURI().toString());   
+                        final XMLFilter filter = saxTransformerFactory.newXMLFilter(xslSource);
+                        filter.setEntityResolver(CatalogUtils.getCatalogResolver());
+                        pipe.add(filter);                        
+                    } catch (final FileNotFoundException | TransformerConfigurationException e) {
+                        throw new RuntimeException(
+                                String.format("Failed to create XMLFilter for prefilter XSLT '%s'", prefilter),
+                                e);
+                    }
+                }
+            }
+        }
 
         if (filterUtils != null) {
             final ProfilingFilter profilingFilter = new ProfilingFilter();

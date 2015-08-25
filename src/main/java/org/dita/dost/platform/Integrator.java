@@ -59,6 +59,9 @@ public final class Integrator {
     /** Feature name for print transformation types. */
     private static final String FEAT_PRINT_TRANSTYPES = "dita.transtype.print";
     private static final String FEAT_LIB_EXTENSIONS = "dita.conductor.lib.import";
+    /** Feature name for preprocessor pre-filter XMLFilter classes. */
+    private static final String FEAT_PREPROCESS_PREFILTER = "dita.preprocess.prefilter";
+    
     private static final String ELEM_PLUGINS = "plugins";
 
     public static final String FEAT_VALUE_SEPARATOR = ",";
@@ -269,6 +272,16 @@ public final class Integrator {
             }
         }
         configuration.putAll(getParserConfiguration());
+        final List<String> preprocessPrefilter = new ArrayList<>();
+        if (featureTable.containsKey(FEAT_PREPROCESS_PREFILTER)) {
+            for (final String prefilterName : featureTable.get(FEAT_PREPROCESS_PREFILTER)) {
+                final String e = prefilterName.trim();
+                if (e.length() != 0 && !preprocessPrefilter.contains(e)) {
+                    preprocessPrefilter.add(e);
+                }
+            }
+        }
+        configuration.put(CONF_PREPROCESS_PREFILTERS, StringUtils.join(preprocessPrefilter, CONF_LIST_SEPARATOR));
         
         OutputStream out = null;
         try {
