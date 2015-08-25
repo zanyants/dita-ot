@@ -96,37 +96,32 @@
   <path id="dost.jar.path" refid="dost.class.path"/>
 
   <taskdef name="pipeline"
-    classname="org.dita.dost.invoker.ExtensibleAntInvoker">
-    <classpath refid="dost.class.path" />
-  </taskdef>
+    classname="org.dita.dost.invoker.ExtensibleAntInvoker"
+    classpathref="dost.class.path"/>
 
   <taskdef name="dita-ot-echo"
-    classname="org.dita.dost.log.DITAOTEchoTask">
-    <classpath refid="dost.class.path" />
-  </taskdef>
+    classname="org.dita.dost.log.DITAOTEchoTask"
+    classpathref="dost.class.path"/>
 
   <taskdef name="dita-ot-fail"
-    classname="org.dita.dost.log.DITAOTFailTask">
-    <classpath refid="dost.class.path" />
-  </taskdef>
+    classname="org.dita.dost.log.DITAOTFailTask"
+    classpathref="dost.class.path"/>
 
   <taskdef name="dita-ot-copy"
-    classname="org.dita.dost.util.DITAOTCopy">
-    <classpath refid="dost.class.path" />
-  </taskdef>
+    classname="org.dita.dost.util.DITAOTCopy"
+    classpathref="dost.class.path"/>
 	
-  <taskdef name="job-property" classname="org.dita.dost.platform.JobPropertyTask">
-    <classpath refid="dost.class.path"/>
-  </taskdef>
+  <taskdef name="job-property" 
+    classname="org.dita.dost.platform.JobPropertyTask"
+    classpathref="dost.class.path"/>
 	
   <typedef name="isabsolute"
-    classname="org.dita.dost.util.IsAbsolute">
-    <classpath refid="dost.class.path" />
-  </typedef>
+    classname="org.dita.dost.util.IsAbsolute"
+    classpathref="dost.class.path"/>
   
-  <typedef name="dita-fileset" classname="org.dita.dost.util.JobSourceSet">
-    <classpath refid="dost.class.path" />
-  </typedef>
+  <typedef name="dita-fileset" 
+    classname="org.dita.dost.util.JobSourceSet"
+    classpathref="dost.class.path"/>
 
   <macrodef name="job-helper" >
     <attribute name="file"/>

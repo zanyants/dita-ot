@@ -31,8 +31,9 @@
     <pathelement location="${dita.dir}/lib/commons-io.jar"/>
   </path>
   
-  <taskdef name="integrate" classname="org.dita.dost.platform.IntegratorTask">
-    <classpath refid="dost.class.path"/>
+  <taskdef name="integrate" 
+    classname="org.dita.dost.platform.IntegratorTask"
+    classpathref="dost.class.path">
   </taskdef>
   
   <target name="integrate">
