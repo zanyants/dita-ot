@@ -182,7 +182,8 @@ public final class GenMapAndTopicListModule extends AbstractPipelineModuleImpl {
     /** Subject scheme usage. Key is absolute file path, value is set of applicable subject schemes. */
     private final Map<URI, Set<URI>> schemeDictionary;
     private String transtype;
-
+    private String[] prefilters;
+    
     /** use grammar pool cache */
     private boolean gramcache = true;
 
