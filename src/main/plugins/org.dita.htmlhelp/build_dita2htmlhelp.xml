@@ -155,12 +155,12 @@
   </target>
 
   <target name="dita.htmlhelp.convertlang">
-    <taskdef name="check-lang" classname="org.dita.dost.util.CheckLang">
-      <classpath refid="dost.class.path"/>
-    </taskdef>
-    <taskdef name="convert-lang" classname="org.dita.dost.util.ConvertLang">
-      <classpath refid="dost.class.path"/>
-    </taskdef>
+    <taskdef name="check-lang" 
+      classname="org.dita.dost.util.CheckLang"
+      classpathref="dost.class.path"/>
+    <taskdef name="convert-lang" 
+      classname="org.dita.dost.util.ConvertLang"
+      classpathref="dost.class.path"/>
     <check-lang message="Check Language"
                 basedir="${basedir}"
                 tempdir="${dita.temp.dir}"
