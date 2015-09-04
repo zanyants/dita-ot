@@ -309,7 +309,7 @@ public final class DebugAndFilterModule extends AbstractPipelineModuleImpl {
                         CatalogUtils.setDitaDir(ditaDir);
                         final SAXTransformerFactory saxTransformerFactory = (SAXTransformerFactory) transformerFactory;
                         saxTransformerFactory.setURIResolver(CatalogUtils.getCatalogResolver());
-                        final File xslFile = new File(prefilter);
+                        final File xslFile = new File(ditaDir,prefilter);
                         final Source xslSource = new StreamSource(new FileInputStream(xslFile),xslFile.toURI().toString());
                         final XMLFilter filter = saxTransformerFactory.newXMLFilter(xslSource);
                         filter.setEntityResolver(CatalogUtils.getCatalogResolver());
